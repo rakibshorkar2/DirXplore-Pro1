@@ -7,54 +7,122 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  # libtorrent version tag — bump this to invalidate the build cache
+  LIBTORRENT_TAG: v2.0.11
+  OPENSSL_ROOT: /opt/homebrew/opt/openssl@3
+  BOOST_ROOT: /opt/homebrew/opt/boost
+
 jobs:
   build:
     name: Build Unsigned IPA
     runs-on: macos-14
 
     steps:
+      # ── 1. Checkout ───────────────────────────────────────────────────────
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # ── 2. Homebrew deps (cached) ─────────────────────────────────────────
       - name: Cache Homebrew packages
-        id: cache-homebrew
         uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/Homebrew
-            /opt/homebrew/Cellar
-            /opt/homebrew/var/homebrew/locks
-          key: ${{ runner.os }}-homebrew-v1
+            /opt/homebrew/Cellar/boost
+            /opt/homebrew/Cellar/openssl@3
+            /opt/homebrew/Cellar/cmake
+          key: ${{ runner.os }}-homebrew-boost-openssl-cmake-v2
           restore-keys: |
-            ${{ runner.os }}-homebrew-
+            ${{ runner.os }}-homebrew-boost-openssl-cmake-
 
-      - name: Install dependencies via Homebrew
+      - name: Install Homebrew dependencies
         run: |
-          brew install boost openssl@3 cmake
-          echo "BOOST_ROOT=/opt/homebrew/opt/boost" >> $GITHUB_ENV
-          echo "OPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3" >> $GITHUB_ENV
+          brew install boost openssl@3 cmake || true
+          # Verify
+          cmake --version
+          echo "OpenSSL: $(ls /opt/homebrew/opt/openssl@3/lib/libssl.dylib)"
+          echo "Boost:   $(ls /opt/homebrew/opt/boost/lib/libboost_system.dylib)"
 
-      - name: Clone libtorrent submodule
+      # ── 3. Clone libtorrent (with ALL submodules) ─────────────────────────
+      - name: Cache libtorrent source + submodules
+        id: cache-libtorrent
+        uses: actions/cache@v4
+        with:
+          path: LibTorrent-Swift/Thirdparty/libtorrent
+          key: libtorrent-src-${{ env.LIBTORRENT_TAG }}-v1
+
+      - name: Clone libtorrent (with submodules)
+        if: steps.cache-libtorrent.outputs.cache-hit != 'true'
         run: |
           rm -rf LibTorrent-Swift/Thirdparty/libtorrent
-          git clone --depth 1 --branch v2.0.11 https://github.com/arvidn/libtorrent.git LibTorrent-Swift/Thirdparty/libtorrent
+          git clone \
+            --depth 1 \
+            --branch ${{ env.LIBTORRENT_TAG }} \
+            --recurse-submodules \
+            --shallow-submodules \
+            https://github.com/arvidn/libtorrent.git \
+            LibTorrent-Swift/Thirdparty/libtorrent
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      # ── 4. Build libtorrent static lib (cached by tag) ────────────────────
+      - name: Cache compiled libtorrent-rasterbar.a
+        id: cache-libtorrent-build
+        uses: actions/cache@v4
         with:
-          flutter-version: '3.22.x' # Or use default stable channel
-          channel: 'stable'
-          cache: true
+          path: LibTorrent-Swift/libtorrent-build
+          key: libtorrent-build-${{ env.LIBTORRENT_TAG }}-macos14-v1
 
-      - name: Build LibTorrent XCFramework
+      - name: CMake configure libtorrent
+        if: steps.cache-libtorrent-build.outputs.cache-hit != 'true'
         run: |
           cd LibTorrent-Swift
-          chmod +x make.sh
-          
-          # Run make.sh to generate CMake targets
-          ./make.sh
-          
-          # Clean and archive iOS Device framework
+          cmake ./Thirdparty/libtorrent \
+            -B./libtorrent-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=14 \
+            -G Xcode \
+            -Wno-dev \
+            -DOPENSSL_ROOT_DIR=${{ env.OPENSSL_ROOT }} \
+            -DOPENSSL_USE_STATIC_LIBS=FALSE \
+            -DCMAKE_XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST=NO \
+            -DCMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET=15.0 \
+            -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
+            -DCMAKE_CXX_FLAGS="-DTORRENT_HAVE_MMAP=0 -DNDEBUG -DTORRENT_NO_DEPRECATE" \
+            -DBUILD_SHARED_LIBS=OFF \
+            -Dbuild_tests=OFF \
+            -Dbuild_examples=OFF \
+            -Dbuild_tools=OFF \
+            -Dpython-bindings=OFF \
+            -DCMAKE_XCODE_ATTRIBUTE_ARCHS="\$(ARCHS_STANDARD)" \
+            -DCMAKE_XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS="iphoneos iphonesimulator"
+
+      - name: Build libtorrent-rasterbar.a (iOS device)
+        if: steps.cache-libtorrent-build.outputs.cache-hit != 'true'
+        run: |
+          cd LibTorrent-Swift
+          xcodebuild \
+            -project libtorrent-build/libtorrent.xcodeproj \
+            -scheme torrent-rasterbar \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath libtorrent-build/DerivedData \
+            ONLY_ACTIVE_ARCH=NO \
+            SKIP_INSTALL=YES \
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES
+
+      # ── 5. Build LibTorrent.xcframework ────────────────────────────────────
+      - name: Cache LibTorrent XCFramework
+        id: cache-xcframework
+        uses: actions/cache@v4
+        with:
+          path: LibTorrent-Swift/build/LibTorrent.xcframework
+          key: libtorent-xcfw-${{ env.LIBTORRENT_TAG }}-macos14-v1
+
+      - name: Archive LibTorrent.framework (iOS device)
+        if: steps.cache-xcframework.outputs.cache-hit != 'true'
+        run: |
+          cd LibTorrent-Swift
           xcodebuild archive \
             -project LibTorrent.xcodeproj \
             -scheme LibTorrent \
@@ -62,9 +130,14 @@ jobs:
             -destination "generic/platform=iOS" \
             -archivePath "archives/LibTorrent-iOS.xcarchive" \
             SKIP_INSTALL=NO \
-            BUILD_LIBRARY_FOR_DISTRIBUTION=YES
-            
-          # Clean and archive iOS Simulator framework (useful for local simulation)
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+            OPENSSL_ROOT_DIR=${{ env.OPENSSL_ROOT }} \
+            LIBRARY_SEARCH_PATHS="$(pwd)/libtorrent-build/DerivedData/Build/Products/Release-iphoneos ${{ env.OPENSSL_ROOT }}/lib"
+
+      - name: Archive LibTorrent.framework (iOS Simulator)
+        if: steps.cache-xcframework.outputs.cache-hit != 'true'
+        run: |
+          cd LibTorrent-Swift
           xcodebuild archive \
             -project LibTorrent.xcodeproj \
             -scheme LibTorrent \
@@ -72,39 +145,62 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             -archivePath "archives/LibTorrent-iOS_Simulator.xcarchive" \
             SKIP_INSTALL=NO \
-            BUILD_LIBRARY_FOR_DISTRIBUTION=YES
-            
-          # Package archives into a single XCFramework
-          xcodebuild -create-xcframework \
-            -archive archives/LibTorrent-iOS.xcarchive/Products/Library/Frameworks/LibTorrent.framework \
-            -archive archives/LibTorrent-iOS_Simulator.xcarchive/Products/Library/Frameworks/LibTorrent.framework \
-            -output build/LibTorrent.xcframework
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+            OPENSSL_ROOT_DIR=${{ env.OPENSSL_ROOT }} \
+            LIBRARY_SEARCH_PATHS="$(pwd)/libtorrent-build/DerivedData/Build/Products/Release-iphonesimulator ${{ env.OPENSSL_ROOT }}/lib"
 
+      - name: Create XCFramework
+        if: steps.cache-xcframework.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p LibTorrent-Swift/build
+          xcodebuild -create-xcframework \
+            -archive LibTorrent-Swift/archives/LibTorrent-iOS.xcarchive \
+            -framework LibTorrent.framework \
+            -archive LibTorrent-Swift/archives/LibTorrent-iOS_Simulator.xcarchive \
+            -framework LibTorrent.framework \
+            -output LibTorrent-Swift/build/LibTorrent.xcframework
+
+      # ── 6. Set up Flutter ─────────────────────────────────────────────────
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # ── 7. Embed XCFramework into plugin ──────────────────────────────────
       - name: Embed XCFramework into Flutter plugin
         run: |
-          # Copy compiled framework to plugin's vendored folder
           mkdir -p libtorrent_bridge/ios/Frameworks
-          cp -R LibTorrent-Swift/build/LibTorrent.xcframework libtorrent_bridge/ios/Frameworks/
-          ls -la libtorrent_bridge/ios/Frameworks/LibTorrent.xcframework
+          rm -rf libtorrent_bridge/ios/Frameworks/LibTorrent.xcframework
+          cp -R LibTorrent-Swift/build/LibTorrent.xcframework \
+                libtorrent_bridge/ios/Frameworks/LibTorrent.xcframework
+          echo "Embedded frameworks:"
+          ls -la libtorrent_bridge/ios/Frameworks/
 
-      - name: Install Flutter dependencies
-        run: |
-          flutter pub get
-          cd libtorrent_bridge
-          flutter pub get
+      # ── 8. Flutter & Pod install ──────────────────────────────────────────
+      - name: Flutter pub get
+        run: flutter pub get
 
-      - name: Resolve CocoaPods and pod install
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            pods-
+
+      - name: Pod install
         run: |
           cd ios
-          # Prevent CocoaPods from searching global updates if cached, speeds up build
           pod install --repo-update
 
+      # ── 9. Build unsigned IPA ─────────────────────────────────────────────
       - name: Build Unsigned IPA
         run: |
-          # Build Flutter iOS IPA without signing profiles
-          flutter build ipa --no-codesign
+          flutter build ipa --no-codesign --release
 
-      - name: Upload Unsigned IPA Artifact
+      # ── 10. Upload artifact ───────────────────────────────────────────────
+      - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
         with:
           name: VoltTorrent-Unsigned-IPA
