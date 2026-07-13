@@ -174,44 +174,47 @@ jobs:
           cd ios
           pod install --repo-update
 
-      # ── 9. Build unsigned app + package IPA manually ──────────────────────
-      - name: Build iOS app (no codesign)
+      # ── 9. Build + archive + package IPA ─────────────────────────────────
+      - name: xcodebuild archive (no codesign)
         run: |
-          # Flutter 3.44+ throws a post-build error about the Development Team
-          # even with --no-codesign, BUT Xcode itself finishes successfully
-          # ("Xcode build done" appears before the Flutter error).
-          # We ignore Flutter's exit code and rely on verifying Runner.app below.
-          flutter build ios --no-codesign --release || true
+          # xcodebuild archive produces a fully-resolved .xcarchive whose
+          # Products/Applications/Runner.app contains real files (no symlinks),
+          # which is required for a valid sideloadable IPA.
+          xcodebuild archive \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$(pwd)/build/ios/Runner.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            SKIP_INSTALL=NO
 
-      - name: Verify Runner.app was built
+      - name: Package unsigned IPA from xcarchive
         run: |
-          APP_PATH="build/ios/Release-iphoneos/Runner.app"
-          if [ ! -d "$APP_PATH" ]; then
-            echo "ERROR: Runner.app not found at $APP_PATH"
-            echo "Contents of build/ios/:"
-            ls -la build/ios/ || echo "(directory missing)"
-            exit 1
-          fi
-          echo "Runner.app found:"
-          ls -lh "$APP_PATH"
+          ARCHIVE="$(pwd)/build/ios/Runner.xcarchive"
+          APP="$ARCHIVE/Products/Applications/Runner.app"
+          IPA_DIR="$(pwd)/build/ios/ipa"
+          IPA="$IPA_DIR/VoltTorrent-Unsigned.ipa"
 
-      - name: Package unsigned IPA
-        run: |
-          APP_PATH="build/ios/Release-iphoneos/Runner.app"
-          STAGING_DIR="build/ios/ipa_staging"
-          IPA_DIR="build/ios/ipa"
-          IPA_PATH="$(pwd)/$IPA_DIR/VoltTorrent-Unsigned.ipa"
+          echo "=== Archive contents ==="
+          ls -la "$ARCHIVE/Products/Applications/" || { echo "Archive missing"; exit 1; }
 
-          rm -rf "$STAGING_DIR"
-          mkdir -p "$STAGING_DIR/Payload"
-          mkdir -p "$IPA_DIR"
+          echo "=== Info.plist check ==="
+          ls -lh "$APP/Info.plist" || { echo "Info.plist missing from app bundle"; exit 1; }
 
-          cp -R "$APP_PATH" "$STAGING_DIR/Payload/"
-          (cd "$STAGING_DIR" && zip -qr "$IPA_PATH" Payload/)
+          mkdir -p "$IPA_DIR/Payload"
+          # ditto is the macOS-native tool for copying app bundles:
+          # it resolves symlinks, preserves resource forks and extended attributes.
+          ditto "$APP" "$IPA_DIR/Payload/Runner.app"
 
-          echo "IPA packaged successfully:"
-          ls -lh "$IPA_PATH"
+          (cd "$IPA_DIR" && zip -qr "$IPA" Payload/)
 
+          echo "=== IPA packaged ==="
+          ls -lh "$IPA"
 
       # ── 10. Upload artifact ───────────────────────────────────────────────
       - name: Upload Unsigned IPA
