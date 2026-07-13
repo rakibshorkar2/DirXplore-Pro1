@@ -175,6 +175,9 @@ jobs:
           pod install --repo-update
 
       # ── 9. Build + archive + package IPA ─────────────────────────────────
+      - name: Precache Flutter iOS artifacts
+        run: flutter precache --ios
+
       - name: xcodebuild archive (no codesign)
         run: |
           # xcodebuild archive produces a fully-resolved .xcarchive whose
