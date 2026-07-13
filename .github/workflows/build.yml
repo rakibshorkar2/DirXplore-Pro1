@@ -132,6 +132,7 @@ jobs:
             SKIP_INSTALL=NO \
             BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
             OPENSSL_ROOT_DIR=${{ env.OPENSSL_ROOT }} \
+            HEADER_SEARCH_PATHS="\$(inherited) ${{ env.BOOST_ROOT }}/include ${{ env.OPENSSL_ROOT }}/include" \
             LIBRARY_SEARCH_PATHS="$(pwd)/libtorrent-build/DerivedData/Build/Products/Release-iphoneos ${{ env.OPENSSL_ROOT }}/lib"
 
       - name: Extract Device Framework
