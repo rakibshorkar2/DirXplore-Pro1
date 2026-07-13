@@ -128,8 +128,8 @@ public class LibtorrentBridgePlugin: NSObject, FlutterPlugin, FlutterStreamHandl
     // Efficiency options
     settings.preallocateStorage = false 
 
-    self.session = Session(initWith: downloadURL, torrentsPath: torrentsURL, fastResumePath: fastResumeURL, settings: settings, storages: [:])
-    self.session?.addDelegate(self)
+    self.session = Session(downloadURL, torrentsPath: torrentsURL, fastResumePath: fastResumeURL, settings: settings, storages: [:])
+    self.session?.add(self)
   }
 
   private func addTorrent(magnetUrl: String, result: @escaping FlutterResult) {
