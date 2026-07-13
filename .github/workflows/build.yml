@@ -128,7 +128,6 @@ jobs:
             -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath "archives/LibTorrent-iOS.xcarchive" \
-            -derivedDataPath "$(pwd)/DerivedData" \
             SKIP_INSTALL=NO \
             BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
             OPENSSL_ROOT_DIR=${{ env.OPENSSL_ROOT }} \
@@ -143,15 +142,18 @@ jobs:
           cp -R LibTorrent-Swift/archives/LibTorrent-iOS.xcarchive/Products/Library/Frameworks/LibTorrent.framework \
                 LibTorrent-Swift/build/LibTorrent.framework
           
-          # Copy the dynamic OpenSSL framework built by Swift Package Manager dependency
-          OPENSSL_SRC="LibTorrent-Swift/DerivedData/Build/Intermediates.noindex/ArchiveIntermediates/LibTorrent/BuildProductsPath/Release-iphoneos/OpenSSL.framework"
-          if [ -d "$OPENSSL_SRC" ]; then
-            cp -R "$OPENSSL_SRC" LibTorrent-Swift/build/OpenSSL.framework
+          # Find and copy the compiled dynamic OpenSSL framework from default DerivedData location
+          echo "=== Locating OpenSSL.framework in default DerivedData ==="
+          OPENSSL_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "OpenSSL.framework" -type d -print -quit)
+          
+          if [ -n "$OPENSSL_PATH" ] && [ -d "$OPENSSL_PATH" ]; then
+            echo "Found OpenSSL.framework at: $OPENSSL_PATH"
+            cp -R "$OPENSSL_PATH" LibTorrent-Swift/build/OpenSSL.framework
             echo "Successfully copied OpenSSL.framework"
           else
-            echo "ERROR: OpenSSL.framework not found at $OPENSSL_SRC"
-            echo "Searching DerivedData for OpenSSL.framework..."
-            find LibTorrent-Swift/DerivedData -name "OpenSSL.framework" -type d
+            echo "ERROR: OpenSSL.framework not found in default DerivedData!"
+            echo "DerivedData listing:"
+            ls -la ~/Library/Developer/Xcode/DerivedData/ || echo "DerivedData empty/missing"
             exit 1
           fi
 
