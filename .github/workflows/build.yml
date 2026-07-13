@@ -185,13 +185,11 @@ jobs:
 
       - name: Verify Runner.app was built
         run: |
-          APP_PATH="build/ios/iphoneos/Runner.app"
+          APP_PATH="build/ios/Release-iphoneos/Runner.app"
           if [ ! -d "$APP_PATH" ]; then
             echo "ERROR: Runner.app not found at $APP_PATH"
             echo "Contents of build/ios/:"
             ls -la build/ios/ || echo "(directory missing)"
-            echo "Contents of build/ios/iphoneos/:"
-            ls -la build/ios/iphoneos/ || echo "(directory missing)"
             exit 1
           fi
           echo "Runner.app found:"
@@ -199,20 +197,21 @@ jobs:
 
       - name: Package unsigned IPA
         run: |
-          APP_PATH="build/ios/iphoneos/Runner.app"
+          APP_PATH="build/ios/Release-iphoneos/Runner.app"
           STAGING_DIR="build/ios/ipa_staging"
           IPA_DIR="build/ios/ipa"
-          IPA_PATH="$IPA_DIR/VoltTorrent-Unsigned.ipa"
+          IPA_PATH="$(pwd)/$IPA_DIR/VoltTorrent-Unsigned.ipa"
 
           rm -rf "$STAGING_DIR"
           mkdir -p "$STAGING_DIR/Payload"
           mkdir -p "$IPA_DIR"
 
           cp -R "$APP_PATH" "$STAGING_DIR/Payload/"
-          (cd "$STAGING_DIR" && zip -qr "../../$IPA_PATH" Payload/)
+          (cd "$STAGING_DIR" && zip -qr "$IPA_PATH" Payload/)
 
           echo "IPA packaged successfully:"
           ls -lh "$IPA_PATH"
+
 
       # ── 10. Upload artifact ───────────────────────────────────────────────
       - name: Upload Unsigned IPA
