@@ -177,25 +177,41 @@ jobs:
       # ── 9. Build unsigned app + package IPA manually ──────────────────────
       - name: Build iOS app (no codesign)
         run: |
-          # flutter build ios --no-codesign builds the .app bundle without
-          # requiring a Development Team, unlike 'flutter build ipa'.
-          flutter build ios --no-codesign --release
+          # Flutter 3.44+ throws a post-build error about the Development Team
+          # even with --no-codesign, BUT Xcode itself finishes successfully
+          # ("Xcode build done" appears before the Flutter error).
+          # We ignore Flutter's exit code and rely on verifying Runner.app below.
+          flutter build ios --no-codesign --release || true
+
+      - name: Verify Runner.app was built
+        run: |
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: Runner.app not found at $APP_PATH"
+            echo "Contents of build/ios/:"
+            ls -la build/ios/ || echo "(directory missing)"
+            echo "Contents of build/ios/iphoneos/:"
+            ls -la build/ios/iphoneos/ || echo "(directory missing)"
+            exit 1
+          fi
+          echo "Runner.app found:"
+          ls -lh "$APP_PATH"
 
       - name: Package unsigned IPA
         run: |
-          # Create the standard IPA Payload structure and zip it.
           APP_PATH="build/ios/iphoneos/Runner.app"
-          PAYLOAD_DIR="build/ios/iphoneos/Payload"
+          STAGING_DIR="build/ios/ipa_staging"
           IPA_DIR="build/ios/ipa"
           IPA_PATH="$IPA_DIR/VoltTorrent-Unsigned.ipa"
 
-          mkdir -p "$PAYLOAD_DIR"
+          rm -rf "$STAGING_DIR"
+          mkdir -p "$STAGING_DIR/Payload"
           mkdir -p "$IPA_DIR"
 
-          cp -R "$APP_PATH" "$PAYLOAD_DIR/"
-          (cd build/ios/iphoneos && zip -qr "../../../$IPA_PATH" Payload/)
+          cp -R "$APP_PATH" "$STAGING_DIR/Payload/"
+          (cd "$STAGING_DIR" && zip -qr "../../$IPA_PATH" Payload/)
 
-          echo "IPA created at: $IPA_PATH"
+          echo "IPA packaged successfully:"
           ls -lh "$IPA_PATH"
 
       # ── 10. Upload artifact ───────────────────────────────────────────────
