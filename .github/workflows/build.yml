@@ -183,11 +183,13 @@ jobs:
           # xcodebuild archive produces a fully-resolved .xcarchive whose
           # Products/Applications/Runner.app contains real files (no symlinks),
           # which is required for a valid sideloadable IPA.
+          # -quiet suppresses per-file logs so errors are visible (avoids 81KB truncation).
           xcodebuild archive \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -sdk iphoneos \
+            -quiet \
             -archivePath "$(pwd)/build/ios/Runner.xcarchive" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
