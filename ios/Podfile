@@ -1,9 +1,6 @@
 # Set platform to iOS 15.0 for the workspace
 platform :ios, '15.0'
 
-# CocoaPods analytics sends network stats. Disable it to speed up builds.
-disable_cocoapods_analytics!
-
 # Load Flutter helper script
 flutter_application_path = '../'
 load File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb') if File.exist?(File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb'))
