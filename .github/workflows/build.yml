@@ -115,8 +115,8 @@ jobs:
         id: cache-device-framework
         uses: actions/cache@v4
         with:
-          path: LibTorrent-Swift/build/LibTorrent.framework
-          key: libtorent-fw-device-${{ env.LIBTORRENT_TAG }}-macos14-v1
+          path: LibTorrent-Swift/build
+          key: libtorent-fw-device-${{ env.LIBTORRENT_TAG }}-macos14-v2
 
       - name: Archive LibTorrent.framework (iOS device)
         if: steps.cache-device-framework.outputs.cache-hit != 'true'
@@ -137,8 +137,10 @@ jobs:
         if: steps.cache-device-framework.outputs.cache-hit != 'true'
         run: |
           mkdir -p LibTorrent-Swift/build
-          cp -R LibTorrent-Swift/archives/LibTorrent-iOS.xcarchive/Products/Library/Frameworks/LibTorrent.framework \
-                LibTorrent-Swift/build/LibTorrent.framework
+          echo "=== Built Frameworks ==="
+          ls -la LibTorrent-Swift/archives/LibTorrent-iOS.xcarchive/Products/Library/Frameworks/ || true
+          cp -R LibTorrent-Swift/archives/LibTorrent-iOS.xcarchive/Products/Library/Frameworks/*.framework \
+                LibTorrent-Swift/build/
 
       # ── 6. Set up Flutter ─────────────────────────────────────────────────
       - name: Set up Flutter
@@ -150,12 +152,13 @@ jobs:
       # ── 7. Embed Framework into plugin ────────────────────────────────────
       - name: Embed Framework into Flutter plugin
         run: |
+          rm -rf libtorrent_bridge/ios/Frameworks
           mkdir -p libtorrent_bridge/ios/Frameworks
-          rm -rf libtorrent_bridge/ios/Frameworks/LibTorrent.framework
-          cp -R LibTorrent-Swift/build/LibTorrent.framework \
-                libtorrent_bridge/ios/Frameworks/LibTorrent.framework
-          echo "Embedded framework:"
+          cp -R LibTorrent-Swift/build/*.framework \
+                libtorrent_bridge/ios/Frameworks/
+          echo "Embedded frameworks:"
           ls -la libtorrent_bridge/ios/Frameworks/
+
 
       # ── 8. Flutter & Pod install ──────────────────────────────────────────
       - name: Flutter pub get

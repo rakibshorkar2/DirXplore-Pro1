@@ -18,7 +18,7 @@ Flutter bridge for LibTorrent-Swift
   s.platform = :ios, '15.0'
 
   # Vendor the LibTorrent framework compiled from the Swift project
-  s.vendored_frameworks = 'Frameworks/LibTorrent.framework'
+  s.vendored_frameworks = 'Frameworks/*.framework'
 
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
