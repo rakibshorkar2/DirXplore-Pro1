@@ -1,0 +1,27 @@
+# Set platform to iOS 15.0 for the workspace
+platform :ios, '15.0'
+
+# CocoaPods analytics sends network stats. Disable it to speed up builds.
+disable_cocoapods_analytics!
+
+# Load Flutter helper script
+flutter_application_path = '../'
+load File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb') if File.exist?(File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb'))
+load File.join(flutter_application_path, 'Flutter', 'podhelper.rb') if File.exist?(File.join(flutter_application_path, 'Flutter', 'podhelper.rb'))
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_ios_pods flutter_application_path
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target) if respond_to?(:flutter_additional_ios_build_settings)
+    target.build_configurations.each do |config|
+      # Force iOS 15.0 target on all dependency pods to prevent target mismatch issues
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+    end
+  end
+end
