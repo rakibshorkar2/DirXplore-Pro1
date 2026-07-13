@@ -40,10 +40,13 @@ jobs:
           brew install boost openssl@3 cmake || true
           # Verify paths
           cmake --version
-          echo "OpenSSL: $(ls /opt/homebrew/opt/openssl@3/lib/libssl.dylib)"
           BOOST_INCLUDE=$(brew --prefix boost)/include
           echo "Boost include: $BOOST_INCLUDE"
           ls $BOOST_INCLUDE/boost/config.hpp && echo "boost/config.hpp FOUND" || echo "boost/config.hpp NOT FOUND"
+          # Symlink boost headers into /opt/homebrew/include so LibTorrent.xcodeproj
+          # can find them via its hardcoded -I/opt/homebrew/include search path
+          ln -sf "$BOOST_INCLUDE/boost" /opt/homebrew/include/boost || true
+          echo "Symlink: $(ls /opt/homebrew/include/boost/config.hpp)"
 
       # ── 3. Clone libtorrent (with ALL submodules) ─────────────────────────
       - name: Cache libtorrent source + submodules
@@ -134,8 +137,6 @@ jobs:
             SKIP_INSTALL=NO \
             BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
             OPENSSL_ROOT_DIR=${{ env.OPENSSL_ROOT }} \
-            OTHER_CFLAGS="-I${{ env.BOOST_ROOT }}/include -I${{ env.OPENSSL_ROOT }}/include" \
-            OTHER_CPLUSPLUSFLAGS="-I${{ env.BOOST_ROOT }}/include -I${{ env.OPENSSL_ROOT }}/include" \
             LIBRARY_SEARCH_PATHS="$(pwd)/libtorrent-build/DerivedData/Build/Products/Release-iphoneos ${{ env.OPENSSL_ROOT }}/lib"
 
       - name: Extract Device Framework
