@@ -174,15 +174,34 @@ jobs:
           cd ios
           pod install --repo-update
 
-      # ── 9. Build unsigned IPA ─────────────────────────────────────────────
-      - name: Build Unsigned IPA
+      # ── 9. Build unsigned app + package IPA manually ──────────────────────
+      - name: Build iOS app (no codesign)
         run: |
-          flutter build ipa --no-codesign --release
+          # flutter build ios --no-codesign builds the .app bundle without
+          # requiring a Development Team, unlike 'flutter build ipa'.
+          flutter build ios --no-codesign --release
+
+      - name: Package unsigned IPA
+        run: |
+          # Create the standard IPA Payload structure and zip it.
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          PAYLOAD_DIR="build/ios/iphoneos/Payload"
+          IPA_DIR="build/ios/ipa"
+          IPA_PATH="$IPA_DIR/VoltTorrent-Unsigned.ipa"
+
+          mkdir -p "$PAYLOAD_DIR"
+          mkdir -p "$IPA_DIR"
+
+          cp -R "$APP_PATH" "$PAYLOAD_DIR/"
+          (cd build/ios/iphoneos && zip -qr "../../../$IPA_PATH" Payload/)
+
+          echo "IPA created at: $IPA_PATH"
+          ls -lh "$IPA_PATH"
 
       # ── 10. Upload artifact ───────────────────────────────────────────────
       - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
         with:
           name: VoltTorrent-Unsigned-IPA
-          path: build/ios/ipa/*.ipa
+          path: build/ios/ipa/VoltTorrent-Unsigned.ipa
           if-no-files-found: error
