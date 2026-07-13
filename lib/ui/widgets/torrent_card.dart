@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+
 import '../../models/torrent_models.dart';
 
 class TorrentCard extends StatelessWidget {
@@ -79,18 +79,18 @@ class TorrentCard extends StatelessWidget {
   IconData _getStatusIcon() {
     switch (torrent.state) {
       case TorrentState.downloading:
-        return LucideIcons.downloadCloud;
+        return Icons.cloud_download_outlined;
       case TorrentState.finished:
       case TorrentState.seeding:
-        return LucideIcons.checkCircle2;
+        return Icons.check_circle_outline;
       case TorrentState.paused:
-        return LucideIcons.pauseCircle;
+        return Icons.pause_circle_outline;
       case TorrentState.downloadingMetadata:
-        return LucideIcons.radio;
+        return Icons.wifi_tethering;
       case TorrentState.storageError:
-        return LucideIcons.alertTriangle;
+        return Icons.warning_amber_rounded;
       default:
-        return LucideIcons.helpCircle;
+        return Icons.help_outline;
     }
   }
 
@@ -183,7 +183,7 @@ class TorrentCard extends StatelessWidget {
                       IconButton(
                         onPressed: onPlayPause,
                         icon: Icon(
-                          torrent.isPaused ? LucideIcons.play : LucideIcons.pause,
+                          torrent.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
                           color: torrent.isPaused ? const Color(0xFF00FF87) : Colors.white.withOpacity(0.8),
                           size: 20,
                         ),
@@ -255,7 +255,7 @@ class TorrentCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            LucideIcons.arrowDownCircle,
+                            Icons.arrow_circle_down_outlined,
                             color: torrent.downloadRate > 0 ? const Color(0xFF6C5CE7) : Colors.white.withOpacity(0.3),
                             size: 14,
                           ),
@@ -274,7 +274,7 @@ class TorrentCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            LucideIcons.arrowUpCircle,
+                            Icons.arrow_circle_up_outlined,
                             color: torrent.uploadRate > 0 ? const Color(0xFF00FF87) : Colors.white.withOpacity(0.3),
                             size: 14,
                           ),
@@ -293,7 +293,7 @@ class TorrentCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            LucideIcons.users,
+                            Icons.people_outline,
                             color: Colors.white.withOpacity(0.3),
                             size: 14,
                           ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../models/torrent_models.dart';
 
@@ -108,7 +108,7 @@ class _FileSelectSheetState extends State<FileSelectSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  LucideIcons.fileSpreadsheet,
+                  Icons.table_chart_outlined,
                   color: Color(0xFFa8a3ff),
                   size: 24,
                 ),
@@ -251,7 +251,7 @@ class _FileSelectSheetState extends State<FileSelectSheet> {
                       child: Row(
                         children: [
                           Icon(
-                            isSelected ? LucideIcons.checkSquare : LucideIcons.square,
+                            isSelected ? Icons.check_box_outlined : Icons.check_box_outline_blank,
                             color: isSelected ? const Color(0xFF6C5CE7) : Colors.white.withOpacity(0.3),
                             size: 20,
                           ),

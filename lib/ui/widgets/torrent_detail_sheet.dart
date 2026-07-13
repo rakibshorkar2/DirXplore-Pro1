@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -182,7 +182,7 @@ class _TorrentDetailSheetState extends State<TorrentDetailSheet> {
               const SizedBox(width: 12),
               IconButton(
                 onPressed: () => _showDeleteDialog(context, manager, torrent),
-                icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 20),
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.redAccent.withOpacity(0.1),
                   padding: const EdgeInsets.all(8),
@@ -219,7 +219,7 @@ class _TorrentDetailSheetState extends State<TorrentDetailSheet> {
                       }
                     },
                     icon: Icon(
-                      torrent.isPaused ? LucideIcons.play : LucideIcons.pause,
+                      torrent.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
                       color: torrent.isPaused ? const Color(0xFF00FF87) : Colors.amberAccent,
                       size: 18,
                     ),
@@ -241,17 +241,17 @@ class _TorrentDetailSheetState extends State<TorrentDetailSheet> {
           // Statistics Grid
           Row(
             children: [
-              _buildStatCard('Speed', _formatSpeed(torrent.downloadRate), LucideIcons.arrowDownCircle, const Color(0xFF6C5CE7)),
+              _buildStatCard('Speed', _formatSpeed(torrent.downloadRate), Icons.arrow_circle_down_outlined, const Color(0xFF6C5CE7)),
               const SizedBox(width: 12),
-              _buildStatCard('Progress', '$pct%', LucideIcons.percent, const Color(0xFF00FF87)),
+              _buildStatCard('Progress', '$pct%', Icons.percent, const Color(0xFF00FF87)),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildStatCard('Total Size', _formatBytes(torrent.total), LucideIcons.database, Colors.amberAccent),
+              _buildStatCard('Total Size', _formatBytes(torrent.total), Icons.storage, Colors.amberAccent),
               const SizedBox(width: 12),
-              _buildStatCard('Peers', 'S: ${torrent.numberOfSeeds} • P: ${torrent.numberOfPeers}', LucideIcons.users, Colors.cyanAccent),
+              _buildStatCard('Peers', 'S: \${torrent.numberOfSeeds} • P: \${torrent.numberOfPeers}', Icons.people_outline, Colors.cyanAccent),
             ],
           ),
           const SizedBox(height: 20),
@@ -298,8 +298,8 @@ class _TorrentDetailSheetState extends State<TorrentDetailSheet> {
                             children: [
                               Icon(
                                 isSelected
-                                    ? (isFinished ? LucideIcons.checkSquare : LucideIcons.download)
-                                    : LucideIcons.minusCircle,
+                                    ? (isFinished ? Icons.check_box_outlined : Icons.download_outlined)
+                                    : Icons.remove_circle_outline,
                                 color: isSelected
                                     ? (isFinished ? const Color(0xFF00FF87) : const Color(0xFF6C5CE7))
                                     : Colors.white.withOpacity(0.2),
@@ -364,7 +364,7 @@ class _TorrentDetailSheetState extends State<TorrentDetailSheet> {
                                 const SizedBox(width: 8),
                                 IconButton(
                                   onPressed: () => _shareFile(file, manager.downloadPath),
-                                  icon: const Icon(LucideIcons.share, size: 14, color: Color(0xFFa8a3ff)),
+                                  icon: const Icon(Icons.share_outlined, size: 14, color: Color(0xFFa8a3ff)),
                                   style: IconButton.styleFrom(
                                     backgroundColor: Colors.white.withOpacity(0.04),
                                     padding: const EdgeInsets.all(6),

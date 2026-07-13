@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../services/torrent_manager.dart';
@@ -311,7 +311,7 @@ class _HomePageState extends State<HomePage> {
                         child: Row(
                           children: [
                             const Icon(
-                              LucideIcons.batteryCharging,
+                              Icons.bolt,
                               color: Color(0xFF00FF87),
                               size: 14,
                             ),
@@ -357,7 +357,7 @@ class _HomePageState extends State<HomePage> {
                               Row(
                                 children: [
                                   const Icon(
-                                    LucideIcons.arrowDownCircle,
+                                    Icons.arrow_circle_down_outlined,
                                     color: Color(0xFF6C5CE7),
                                     size: 18,
                                   ),
@@ -398,7 +398,7 @@ class _HomePageState extends State<HomePage> {
                               Row(
                                 children: [
                                   const Icon(
-                                    LucideIcons.arrowUpCircle,
+                                    Icons.arrow_circle_up_outlined,
                                     color: Color(0xFF00FF87),
                                     size: 18,
                                   ),
@@ -489,7 +489,7 @@ class _HomePageState extends State<HomePage> {
           elevation: 0,
           highlightElevation: 0,
           child: const Icon(
-            LucideIcons.plus,
+            Icons.add,
             color: Colors.white,
             size: 28,
           ),
@@ -515,7 +515,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             child: Icon(
-              LucideIcons.magnet,
+              Icons.link_rounded,
               size: 48,
               color: const Color(0xFF6C5CE7).withOpacity(0.6),
             ),
