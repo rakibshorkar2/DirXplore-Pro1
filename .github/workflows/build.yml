@@ -128,6 +128,7 @@ jobs:
             -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath "archives/LibTorrent-iOS.xcarchive" \
+            -quiet \
             SKIP_INSTALL=NO \
             BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
             OPENSSL_ROOT_DIR=${{ env.OPENSSL_ROOT }} \
