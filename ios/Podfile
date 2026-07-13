@@ -3,8 +3,7 @@ platform :ios, '15.0'
 
 # Load Flutter helper script
 flutter_application_path = '../'
-load File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb') if File.exist?(File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb'))
-load File.join(flutter_application_path, 'Flutter', 'podhelper.rb') if File.exist?(File.join(flutter_application_path, 'Flutter', 'podhelper.rb'))
+load File.expand_path(File.join('..', 'Flutter', 'podhelper.rb'), __FILE__)
 
 target 'Runner' do
   use_frameworks!
